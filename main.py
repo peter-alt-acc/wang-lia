@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
-import google.generativeai as genai
+from google import genai
 
 # Load environment variables from a .env file (useful for securely storing your bot token)
 load_dotenv()
@@ -12,8 +12,21 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Setup Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_message = update.message.text
+
+    try:
+        response = gemini_client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=user_message
+        )
+
+        await update.message.reply_text(response.text)
+
+    except Exception as e:
+        await update.message.reply_text(f"Error: {str(e)}")
 
 # This function is triggered when a user sends the /start command to the bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
